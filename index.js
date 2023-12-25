@@ -36,14 +36,20 @@ app.get("/api/users", (req, res) => {
   res.json(users);
 });
 
+app.get("/api/exercises", (req, res) => {
+  res.json(exercises);
+});
+
 app.post("/api/users/:_id/exercises", (req, res) => {
-  const username = req.body.username;
   const description = req.body.description;
   const duration = Number(req.body.duration);
-  const date = req.body.date || new Date().toDateString();
+  const date = req.body.date
+    ? new Date(req.body.date).toDateString()
+    : new Date().toDateString();
   const _id = req.params._id;
+  const user = users.find((item) => item._id == _id);
   const newExercise = {
-    username,
+    username: user.username,
     description,
     duration,
     date,
@@ -58,13 +64,10 @@ app.post("/api/users/:_id/exercises", (req, res) => {
   });
   log.count = log.log.length;
 
-  const user = users.find((item) => item.username == username);
-
-  res.json(user);
+  res.json(newExercise);
 });
 
 app.get("/api/users/:_id/logs", (req, res) => {
-  //?[from][&to][&limit]
   const id = req.params._id;
   const queryParams = req.query;
   const from = queryParams.from;
@@ -86,17 +89,14 @@ app.get("/api/users/:_id/logs", (req, res) => {
   const validateLimit = (arr, limit) => arr.slice(0, limit);
 
   if (limit || (from && to)) {
+    foundLog = { ...logs.find((item) => item._id == id) };
     if (limit) {
-      foundLog = [...logs.map(item => item.log = validateLimit(item.log, limit))];
-    }
-
-    if (from && to) {
-      // foundLog.log = validatePeriod(foundLog.log, from, to);
-      foundLog = [...logs.map(item => item.log = validatePeriod(item.log, from, to))];
-      // foundLog.log = validatePeriod(foundLog.log, from, to);
+      foundLog.log = validateLimit(foundLog.log, limit);
+    } else {
+      foundLog.log = validatePeriod(foundLog.log, from, to);
     }
   } else {
-    foundLog = {...logs.find((item) => item._id == id)};
+    foundLog = { ...logs.find((item) => item._id == id) };
   }
 
   res.json(foundLog);
